@@ -31,3 +31,11 @@ cropModule.get();
 - Safari Version 9.0.1
 - Google Chrome 47.0.2526.73 (64-bit)
 - Mozilla Firefox 35.0.1
+
+- Windows 8
+- Google Chrome 47.0.2526.80 
+- Internet Explorer 11.0.9600.17105 
+
+##Known issues
+- Not showing selection on load, but showing on resize
+- Not showing corner squares in IE11
