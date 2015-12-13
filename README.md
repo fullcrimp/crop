@@ -6,7 +6,7 @@ Cropping tool with polyfill to work with Cross-Origin Resource Sharing policy re
 - Canvas needed for setup
 - Canvas is set to be responsive and fill parent element 100%
 - Module API developing is in progress
--
+
 
 ##Planned API/deps
 No dependencies, just a compatible with `querySelectorAll`, `FileReader` and `canvas.toDataURL`,
