@@ -46,7 +46,10 @@ c.setCropTrigger('#btn-crop', 'click', function(val) {
 // callback function
 
 c.setUrl(url);
-// you can set the image source this way as well
+// you can set the image source by passing url directly
+
+c.setBase64(val);
+// you can set the image by passing base64 string directly
 ```
 
 ##Tested

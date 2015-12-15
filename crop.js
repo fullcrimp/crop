@@ -44,9 +44,9 @@ function Crop(canvasLiveSelector, options){
         w: canvasLive.width / 2,
         h: canvasLive.height / 2,
         lineColor: '#fff',
-        lineWidth: 1.5,
+        lineWidth: 2,
         dotted: [2, 2],
-        squareSize: 12
+        squareSize: 12,
     };
 
 
@@ -58,7 +58,7 @@ function Crop(canvasLiveSelector, options){
             x: undefined,
             y: undefined,
             w: undefined,
-            h: undefined
+            h: undefined,
         },
         // what we send to server
         // in case we cannot crop
@@ -67,7 +67,7 @@ function Crop(canvasLiveSelector, options){
             x: 0.25,
             y: 0.25,
             w: 0.5,
-            h: 0.5
+            h: 0.5,
         }
     };
 
@@ -139,7 +139,7 @@ function Crop(canvasLiveSelector, options){
 
 
     /******************************************************************
-    * FUNCTIONS
+    * API FUNCTIONS
     ******************************************************************/
 
 
@@ -180,7 +180,16 @@ function Crop(canvasLiveSelector, options){
     }
 
 
-    function setUrl(url) {
+    function setUrlSource(url) {
+        var patt = /(https?:\/\/.*\.(?:png|jpg))/i;
+
+        if (patt.test(url)) {
+            imgSource.src = url;
+        }
+    }
+
+
+    function setBase64Source(string) {
         imgSource.src = url;
     }
 
@@ -237,6 +246,14 @@ function Crop(canvasLiveSelector, options){
     // @TODO:
     function getCropedImage() {
     }
+
+
+
+
+
+    /******************************************************************
+    * API FUNCTIONS
+    ******************************************************************/
 
 
     //reset selection to default settings
@@ -388,7 +405,19 @@ function Crop(canvasLiveSelector, options){
                 x = (canvas.width - w) / 2;
             }
         }
+
+        ctx.beginPath();
         ctx.drawImage(img, x, y, w, h);
+        ctx.fillStyle = 'rgba(0,0,0,.25)';
+        ctx.fillRect(x, y, w, h);
+
+        ctx.save();
+        ctx.rect(sel.x, sel.y, sel.w, sel.h);
+        ctx.clip();
+
+        ctx.drawImage(img, x, y, w, h);
+        ctx.restore();
+
 
         // preserve image relative coords
         temp.source = {
@@ -427,6 +456,8 @@ function Crop(canvasLiveSelector, options){
             ctx.fillRect(sel.x - sel.squareSize / 2, sel.y + sel.h - sel.squareSize / 2, sel.squareSize, sel.squareSize);
         }
 
+        // ctx.fillStyle = 'rgba(255,255,255,.15)';
+        // ctx.fillRect(sel.x, sel.y, sel.w, sel.h);
         ctx.rect(sel.x, sel.y, sel.w, sel.h);
         ctx.lineWidth = sel.lineWidth;
         ctx.strokeStyle = sel.lineColor;
@@ -442,7 +473,8 @@ function Crop(canvasLiveSelector, options){
     return {
         setFileInput: setImageSourceFileInput,
         setUrlInput: setImageSourceUrlInput,
-        setUrl: setUrl,
+        setUrl: setUrlSource,
+        setBase64: setBase64Source,
         setCropTrigger: setCropTrigger,
 
         // getCropedImage: getCropedImage
