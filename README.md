@@ -28,6 +28,7 @@ c.setUrlInput('#inp-src', '#btn-src', 'click');
 c.setCropTrigger('#btn-crop', 'click', function(val) {
     console.log(val);
 });
+
 ```
 
 ##Tested
