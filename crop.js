@@ -33,8 +33,6 @@ function Crop(canvasLiveSelector, options){
         inpSrc, // url image input
         inpFile; // file image input
 
-    var imgResult = document.getElementById('img-result');
-
 
 
 
@@ -46,9 +44,9 @@ function Crop(canvasLiveSelector, options){
         w: canvasLive.width / 2,
         h: canvasLive.height / 2,
         lineColor: '#fff',
-        lineWidth: 2,
+        lineWidth: 1.5,
         dotted: [2, 2],
-        squareSize: 20
+        squareSize: 12
     };
 
 
@@ -182,6 +180,11 @@ function Crop(canvasLiveSelector, options){
     }
 
 
+    function setUrl(url) {
+        imgSource.src = url;
+    }
+
+
     // set crop trigger dom elemnt
     function setCropTrigger(cropTriggerSelector, cropTriggerEventVal, callback) {
 
@@ -238,16 +241,16 @@ function Crop(canvasLiveSelector, options){
 
     //reset selection to default settings
     function resetSelection(canvas) {
-        sel = {
+        var resetVals = {
             x: canvas.width / 4,
             y: canvas.height / 4,
             w: canvas.width / 2,
-            h: canvas.height / 2,
-            lineColor: '#fff',
-            lineWidth: 2,
-            dotted: [2, 2],
-            squareSize: 20
+            h: canvas.height / 2
         };
+
+        for (prop in resetVals) {
+            sel[prop] = resetVals[prop];
+        }
     }
 
 
@@ -265,6 +268,14 @@ function Crop(canvasLiveSelector, options){
             // central dividing reaction area coord lines
             centerX = sel.x + sel.w / 2,
             centerY = sel.y + sel.h / 2;
+
+        // dragging
+        // if ((x > sel.x + 5) && (x < (sel.x + sel.w - 5)) && (y > sel.y + 5) && (y < (sel.y + sel.h - 5))) {
+        //     log('drag');
+        //     sel.x = x;
+        //     sel.y = y;
+        //     return;
+        // }
 
         // resizing
         // top-left
@@ -431,7 +442,9 @@ function Crop(canvasLiveSelector, options){
     return {
         setFileInput: setImageSourceFileInput,
         setUrlInput: setImageSourceUrlInput,
+        setUrl: setUrl,
         setCropTrigger: setCropTrigger,
+
         // getCropedImage: getCropedImage
     }
 };
