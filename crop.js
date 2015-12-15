@@ -98,6 +98,7 @@ function Crop(canvasLiveSelector, options){
 
         // draw image if loaded
         imgSource.addEventListener('load', function() {
+            clearCanvas(ctxLive, canvasLive);
             drawSourceImage(imgSource, ctxLive, canvasLive);
             drawSelection(ctxLive);
         });
