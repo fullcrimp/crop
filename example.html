@@ -39,7 +39,15 @@
     <img id="img-result" class="noselect">
 
     <script>
-    var cropModule = Crop('#canvas-live');
+    var c = Crop('#canvas-live');
+
+    c.setFileInput('#inp-file');
+    c.setUrlInput('#inp-src', '#btn-src', 'click');
+
+    c.setCropTrigger('#btn-crop', 'click', function(val) {
+        console.log(val);
+    });
+
     </script>
 </body>
 </html>

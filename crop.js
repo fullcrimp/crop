@@ -1,28 +1,42 @@
 
-function Crop(canvasLiveId, options){
+function Crop(canvasLiveSelector, options){
+
 
     // temp logging fn
     var log = console.log.bind(console);
 
+    if ( typeof canvasLiveSelector === 'undefined') {
+        throw new Error('cannot init the crop module wotthout preset canvas selector');
+    }
 
-    // var
-    var canvasLive = document.querySelectorAll(canvasLiveId)[0],
-        canvasZoom = document.createElement('canvas'),
+
+    // necessary values
+    var canvasLive = document.querySelectorAll(canvasLiveSelector)[0],
         ctxLive = canvasLive.getContext('2d'),
-        ctxZoom = canvasZoom.getContext('2d'),
+
+        // temp hidden canvas
+        canvasCropped = document.createElement('canvas'),
+        ctxCropped = canvasCropped.getContext('2d'),
 
         dragging = false, // dragging event flag
-        tainted = false,
-
-        btnSrc = document.getElementById('btn-src'),
-        btnCrop = document.getElementById('btn-crop'),
-        inpSrc = document.getElementById('inp-src'),
-        inpFile = document.getElementById('inp-file'),
+        tainted = false, // we may not need it
         imgSource = new Image(),
-        imgZoom = new Image(),
-        imgResult = document.getElementById('img-result'),
+        imgToCrop = new Image(),
         outputFormat = 'image/jpeg',
         outputQuality = 1;
+
+
+    // optional values
+    var inpSrcTrigger, inpSrcTriggerEvent, // selectors for url trigger
+        cropTrigger, cropTriggerEvent,
+
+        inpSrc, // url image input
+        inpFile; // file image input
+
+    var imgResult = document.getElementById('img-result');
+
+
+
 
     // predefined selection
     // center half-image by default
@@ -36,6 +50,7 @@ function Crop(canvasLiveId, options){
         dotted: [2, 2],
         squareSize: 20
     };
+
 
     // export values in relative units
     var temp = {
@@ -59,14 +74,19 @@ function Crop(canvasLiveId, options){
     };
 
 
-    // initalisation
+
+
+    // core events initalisation
     (function init(){
         /******************************************************************
         * EVENT LIST @TODO: put in init() fn
         ******************************************************************/
+
+
         // window events
         window.addEventListener('load', function() {
             resizeCanvasToParentEl(ctxLive, canvasLive);
+            resetSelection(canvasLive);
         });
 
         window.addEventListener('resize', function() {
@@ -75,50 +95,6 @@ function Crop(canvasLiveId, options){
             redrawCanvasLive();
         });
 
-
-
-        // to load a source file
-        inpFile.addEventListener('change', function() {
-            var imageSourceFile  = new FileReader();
-
-            imageSourceFile.addEventListener('loadend', function() {
-                imgSource.src = imageSourceFile.result;
-            });
-
-            if (inpFile.files[0]) {
-                imageSourceFile.readAsDataURL(inpFile.files[0]);
-            }
-        });
-
-        // make a cropped image
-        // or send crop coordinates with image link
-        btnCrop.addEventListener('click', function() {
-            // draw source image without a selection
-            drawSourceImage(imgSource, ctxLive, canvasLive);
-
-            try {
-                imgZoom.src = canvasLive.toDataURL();
-                resizeCanvasToSelection(sel, ctxZoom, canvasZoom);
-            } catch(e) {
-                tainted = true;
-                log('cannot send the selection, sending', temp.sel, e);
-            }
-
-            // draw dotted selection
-            drawSelection(ctxLive, 'dotted');
-        });
-
-        // draw image if loaded - no need
-        imgZoom.addEventListener('load', function() {
-            drawZoomImage(imgZoom, ctxZoom, canvasZoom);
-
-            // temp
-            imgResult.src = canvasZoom.toDataURL();
-        });
-
-        imgZoom.addEventListener('error', function(e) {
-            log(e);
-        });
 
         // draw image if loaded
         imgSource.addEventListener('load', function() {
@@ -129,6 +105,7 @@ function Crop(canvasLiveId, options){
         imgSource.addEventListener('error', function(e) {
             log(e);
         });
+
 
         // EDITING EVENTS
         // click
@@ -160,29 +137,100 @@ function Crop(canvasLiveId, options){
     })();
 
 
+
+
     /******************************************************************
     * FUNCTIONS
     ******************************************************************/
 
 
-    //
-    function setImageSource(val) {
+    // init file input
+    function setImageSourceFileInput(inpFileSelector) {
+        inpFile = document.querySelectorAll(inpFileSelector)[0];
+
+        //initalise
+        inpFile.addEventListener('change', function() {
+            var imageSourceFile  = new FileReader();
+
+            imageSourceFile.addEventListener('loadend', function() {
+                imgSource.src = imageSourceFile.result;
+            });
+
+            if (inpFile.files[0]) {
+                imageSourceFile.readAsDataURL(inpFile.files[0]);
+            }
+        });
     }
 
 
     //
-    function setImageUrlSource(val) {
-        imgSource.src = val;
+    function setImageSourceUrlInput(inpSrcSelector, inpSrcTriggerSelector, inpSrcTriggerEventVal) {
+
+        if ( typeof inpSrcSelector === 'undefined' || typeof inpSrcTriggerSelector === 'undefined') {
+            throw new Error('wrong values in setImageSourceUrlInput');
+        }
+
+        inpSrc = document.querySelectorAll(inpSrcSelector)[0];
+        inpSrcTrigger = document.querySelectorAll(inpSrcTriggerSelector)[0];
+        inpSrcTriggerEvent = inpSrcTriggerEventVal || 'click';
+
+        inpSrcTrigger.addEventListener(inpSrcTriggerEvent, function() {
+            // imgSource.setAttribute('crossOrigin', 'Anonymous');
+            imgSource.src = inpSrc.value;
+        });
     }
 
 
-    //
-    function setImageFileSource(val) {
+    // set crop trigger dom elemnt
+    function setCropTrigger(cropTriggerSelector, cropTriggerEventVal, callback) {
 
+        if ( typeof cropTriggerSelector === 'undefined') {
+            throw new Error('wrong values in setCropTrigger');
+        }
+
+        cropTrigger = document.querySelectorAll(cropTriggerSelector)[0];
+        cropTriggerEvent = cropTriggerEventVal || 'click';
+
+        // make a cropped image
+        // or send crop coordinates with image link
+        cropTrigger.addEventListener(cropTriggerEvent, function() {
+            // draw source image without a selection
+            drawSourceImage(imgSource, ctxLive, canvasLive);
+
+            try {
+                imgToCrop.src = canvasLive.toDataURL();
+                resizeCanvasToSelection(sel, ctxCropped, canvasCropped);
+            } catch(e) {
+                tainted = true;
+                callback({
+                    url: inpSrc.value,
+                    x: temp.sel.x,
+                    y: temp.sel.y,
+                    w: temp.sel.w,
+                    h: temp.sel.h
+                });
+            }
+
+            // draw dotted selection
+            drawSelection(ctxLive, 'dotted');
+        });
+
+        // draw image if loaded
+        imgToCrop.addEventListener('load', function() {
+            drawCropImage(imgToCrop, ctxCropped, canvasCropped);
+
+            // temp
+            var result = canvasCropped.toDataURL();
+            callback(result);
+        });
+
+        imgToCrop.addEventListener('error', function(e) {
+            log(e);
+        });
     }
 
 
-    //
+    // @TODO:
     function getCropedImage() {
     }
 
@@ -190,13 +238,14 @@ function Crop(canvasLiveId, options){
     //reset selection to default settings
     function resetSelection(canvas) {
         sel = {
-            x: temp.sel.x * canvas.width,
-            y: temp.sel.y * canvas.height,
-            w: temp.sel.w * temp.source.w * canvas.width,
-            h: temp.sel.h * temp.source.h * canvas.height,
+            x: canvas.width / 4,
+            y: canvas.height / 4,
+            w: canvas.width / 2,
+            h: canvas.height / 2,
             lineColor: '#fff',
             lineWidth: 2,
-            dotted: [2, 2]
+            dotted: [2, 2],
+            squareSize: 20
         };
     }
 
@@ -204,16 +253,17 @@ function Crop(canvasLiveId, options){
     //
     function saveMouseCoordinates(e, canvas) {
         // click coords relative to the canvas
+        // @TODO shift to pageX, pageY
         var x = e.clientX - canvas.getBoundingClientRect().left,
-        y = e.clientY - canvas.getBoundingClientRect().top,
+            y = e.clientY - canvas.getBoundingClientRect().top,
 
-        // shift between click and left top corner of the sel
-        shiftX = x - sel.x,
-        shiftY = y - sel.y,
+            // shift between click and left top corner of the sel
+            shiftX = x - sel.x,
+            shiftY = y - sel.y,
 
-        // central dividing reaction area coord lines
-        centerX = sel.x + sel.w / 2,
-        centerY = sel.y + sel.h / 2;
+            // central dividing reaction area coord lines
+            centerX = sel.x + sel.w / 2,
+            centerY = sel.y + sel.h / 2;
 
         // resizing
         // top-left
@@ -339,19 +389,22 @@ function Crop(canvasLiveId, options){
 
 
     // draw loaded image to live canvas
-    function drawZoomImage(img, ctx, canvas) {
+    function drawCropImage(img, ctx, canvas) {
         ctx.drawImage(img, -sel.x, -sel.y);
     }
 
 
     // draw sel rectangle
+    // dotted = true - makes to draw dotted line without squares in the corners
+    // dotted = false - solid line with squares
     function drawSelection(ctx, dotted) {
         ctx.beginPath();
 
         if (dotted) {
+            // dashed line
             ctx.setLineDash(sel.dotted);
         } else {
-            // no dashes
+            // solid line
             ctx.setLineDash([]);
 
             // draw squares in the corners
@@ -375,7 +428,9 @@ function Crop(canvasLiveId, options){
     }
 
     return {
-        set: setImageSource,
-        get: getCropedImage
+        setFileInput: setImageSourceFileInput,
+        setUrlInput: setImageSourceUrlInput,
+        setCropTrigger: setCropTrigger,
+        // getCropedImage: getCropedImage
     }
 };

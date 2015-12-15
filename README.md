@@ -1,9 +1,9 @@
 # crop
 ## Simple fronend image cropping tool
-Cropping tool with polyfill to work with Cross-Origin Resource Sharing policy restricted images.
+Cropping tool to work with Cross-Origin Resource Sharing policy restricted images.
 
 - Returns cropped base64 line or url of the image with crop coordinated `{x,y,w,h}`.
-- Canvas needed for setup
+- Canvas needed
 - Canvas is set to be responsive and fill parent element 100%
 - Module API developing is in progress
 
@@ -15,14 +15,19 @@ so the most close guess would be >ie8.
 html code prereqs:
 
 ```html
-<canvas id="canvas-live" class="noselect" width="400" height="400"></canvas>
+<canvas id="canvas-live" width="400" height="400"></canvas>
 ```
 
 Javascript initialisation and API:
 ```javascript
-var cropModule = Crop('#canvas-live');
-cropModule.set();
-cropModule.get();
+var c = Crop('#canvas-live');
+
+c.setFileInput('#inp-file');
+c.setUrlInput('#inp-src', '#btn-src', 'click');
+
+c.setCropTrigger('#btn-crop', 'click', function(val) {
+    console.log(val);
+});
 ```
 
 ##Tested
@@ -33,8 +38,8 @@ cropModule.get();
 - Mozilla Firefox 35.0.1
 
 - Windows 8
-- Google Chrome 47.0.2526.80 
-- Internet Explorer 11.0.9600.17105 
+- Google Chrome 47.0.2526.80
+- Internet Explorer 11.0.9600.17105
 
 ##Known issues
 - Not showing selection on load, but showing on resize
