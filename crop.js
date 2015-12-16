@@ -406,15 +406,18 @@ function Crop(canvasLiveSelector, options){
             }
         }
 
+        // drawing dark bg
         ctx.beginPath();
         ctx.drawImage(img, x, y, w, h);
         ctx.fillStyle = 'rgba(0,0,0,.25)';
         ctx.fillRect(x, y, w, h);
 
+        // drawing cropping area
         ctx.save();
         ctx.rect(sel.x, sel.y, sel.w, sel.h);
         ctx.clip();
 
+        // drawing bright selection area
         ctx.drawImage(img, x, y, w, h);
         ctx.restore();
 
