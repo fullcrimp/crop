@@ -41,8 +41,7 @@
     <br>
     <button id="btn-crop">copy</button>
     <br>
-    <div id="result-img" src="">
-    </div>
+    <img id="result-img" src="">
     <div id="result-txt" style="100%; overflow-wrap: break-word; word-wrap: break-word;"></div>
 
 
@@ -63,15 +62,15 @@
         if(typeof val !== 'string') {
             // obj
             txt.innerHTML = JSON.stringify(val);
-            temp.onload = function() {
-                img.style.background = 'url(' + val.url + ')';
-                img.style.backgroundSize = temp.width + 'px ' + temp.height + 'px';
-                img.style.backgroundPosition = '"' + -val.x + 'px ' + -val.y + 'px"';
-            }
-            temp.src = val.url;
-
-            img.style.width = val.w + 'px';
-            img.style.height = val.h + 'px';
+            // temp.onload = function() {
+            //     img.style.background = 'url(' + val.url + ')';
+            //     img.style.backgroundSize = temp.width + 'px ' + temp.height + 'px';
+            //     img.style.backgroundPosition = '"' + -val.x + 'px ' + -val.y + 'px"';
+            // }
+            // temp.src = val.url;
+            //
+            // img.style.width = val.w + 'px';
+            // img.style.height = val.h + 'px';
 
         } else {
             // base64

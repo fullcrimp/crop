@@ -1,6 +1,8 @@
 
 function Crop(canvasLiveSelector, options){
-
+    // short functionality description
+    // (image) -> (canvas) -> covert to data -> image -> (canvas with size of a crop) -> covert to data
+    // -> callback(data || crop details with url)
 
     // temp logging fn
     var log = console.log.bind(console);
@@ -36,40 +38,24 @@ function Crop(canvasLiveSelector, options){
 
 
 
-    // predefined selection
-    // center half-image by default
+    // selection canvas sizes and predefined properties
     var sel = {
-        x: canvasLive.width / 4,
-        y: canvasLive.height / 4,
-        w: canvasLive.width / 2,
-        h: canvasLive.height / 2,
+        x: undefined,
+        y: undefined,
+        w: undefined,
+        h: undefined,
         lineColor: '#fff',
         lineWidth: 2,
-        dotted: [2, 2],
         squareSize: 12,
     };
 
-
-    // export values in relative units
-    var cache = {
-        // memorise to calculate relative
-        // values for the selection
-        source: {
+    // source canvas sizes
+    var source = {
             x: undefined,
             y: undefined,
             w: undefined,
             h: undefined,
-        },
-        // what we send to server
-        // in case we cannot crop
-        // due to CORS or tainted canvas
-        sel: {
-            x: undefined,
-            y: undefined,
-            w: undefined,
-            h: undefined,
-        }
-    };
+        };
 
 
 
@@ -84,32 +70,28 @@ function Crop(canvasLiveSelector, options){
         // window events
         window.addEventListener('load', function() {
             resizeCanvasToParentEl(ctxLive, canvasLive);
-            // if(cache.source.x){
-            //     resetSelectionToDefault(canvasLive);
-            // }
         });
 
         window.addEventListener('resize', function() {
             resizeCanvasToParentEl(ctxLive, canvasLive);
-            resetSelection(canvasLive);
+
+            calculateSourceImagePos(imgSource, ctxLive, canvasLive);
+            resetSelectionToDefault(canvasLive);
             drawCanvasLive();
         });
 
 
         // draw image if loaded
         imgSource.addEventListener('load', function() {
-            clearCanvas(ctxLive, canvasLive);
+
             calculateSourceImagePos(imgSource, ctxLive, canvasLive);
-            if(cache.source.x){
-                resetSelectionToDefault(canvasLive);
-            }
-            drawSourceImage(imgSource, ctxLive, canvasLive);
-            drawSelection(ctxLive);
+            resetSelectionToDefault(canvasLive);
+            drawCanvasLive();
         });
 
-        imgSource.addEventListener('error', function(e) {
-            log(e);
-        });
+        // imgSource.addEventListener('error', function(e) {
+        //     log(e);
+        // });
 
 
         // EDITING EVENTS
@@ -138,7 +120,6 @@ function Crop(canvasLiveSelector, options){
         canvasLive.addEventListener('mouseleave', function() {
             dragging = false;
         });
-
     })();
 
 
@@ -147,8 +128,6 @@ function Crop(canvasLiveSelector, options){
     /******************************************************************
     * API FUNCTIONS
     ******************************************************************/
-
-
     // init file input
     function setImageSourceFileInput(inpFileSelector) {
         inpFile = document.querySelectorAll(inpFileSelector)[0];
@@ -186,6 +165,7 @@ function Crop(canvasLiveSelector, options){
     }
 
 
+    // set source from url string
     function setUrlSource(url) {
         var patt = /(https?:\/\/.*\.(?:png|jpg))/i;
 
@@ -196,6 +176,7 @@ function Crop(canvasLiveSelector, options){
     }
 
 
+    // set source from base64 string
     function setBase64Source(string) {
         imgSource.src = url;
     }
@@ -219,20 +200,23 @@ function Crop(canvasLiveSelector, options){
 
             try {
                 imgToCrop.src = canvasLive.toDataURL();
-                resizeCanvasToSelection(sel, ctxCropped, canvasCropped);
+                resizeCanvasToSelection(ctxCropped, canvasCropped);
             } catch(e) {
-                tainted = true;
+                // tainted = true;
+
+                var deScale = imgSource.width / source.w;
+
                 callback({
                     url: imgSource.src,
-                    x: cache.sel.x,
-                    y: cache.sel.y,
-                    w: cache.sel.w,
-                    h: cache.sel.h
+                    x: (sel.x - source.x) * deScale,
+                    y: (sel.y - source.y) * deScale,
+                    w: source.w * deScale,
+                    h: source.h * deScale,
                 });
             }
 
-            // draw dotted selection
-            drawSelection(ctxLive, 'dotted');
+            // draw selection
+            drawSelection(ctxLive);
         });
 
         // draw image if loaded
@@ -250,43 +234,20 @@ function Crop(canvasLiveSelector, options){
     }
 
 
-    // @TODO:
-    function getCropedImage() {
-    }
-
-
-
 
 
     /******************************************************************
     * API FUNCTIONS
     ******************************************************************/
-
-
     //reset selection to default settings
     function resetSelectionToDefault(canvas) {
         var resetVals = {
-            x: cache.source.x + cache.source.w / 4,
-            y: cache.source.y + cache.source.h / 4,
-            w: cache.source.w / 2,
-            h: cache.source.h / 2
+            x: source.x + source.w / 4,
+            y: source.y + source.h / 4,
+            w: source.w / 2,
+            h: source.h / 2
         };
-        log(resetVals);
-        for (prop in resetVals) {
-            sel[prop] = resetVals[prop];
-        }
-    }
-
-
-    //reset selection to default settings
-    function resetSelection(canvas) {
-        var resetVals = {
-            x: cache.sel.x,
-            y: cache.sel.y,
-            w: cache.sel.w,
-            h: cache.sel.h
-        };
-        log(resetVals);
+        // log(resetVals);
         for (prop in resetVals) {
             sel[prop] = resetVals[prop];
         }
@@ -350,18 +311,6 @@ function Crop(canvasLiveSelector, options){
             sel.w -= shiftX;
             sel.h = y - sel.y;
         }
-
-        // preserve relative values
-        // @TODO: recalculate values - clearly some of those are wrong
-        // we need to calculate relative TO THE IMAGE, not to canvas
-        // because that is what we send to server in the end
-        // in case of CORS issues
-        cache.sel = {
-            x: sel.x - cache.source.x,
-            y: sel.y - cache.source.y,
-            w: sel.w,
-            h: sel.h
-        }
     }
 
 
@@ -380,7 +329,7 @@ function Crop(canvasLiveSelector, options){
 
 
     // resizes canvas to a particular image
-    function resizeCanvasToSelection(sel, ctx, canvas) {
+    function resizeCanvasToSelection(ctx, canvas) {
         // canvas.width = sel.w;
         // canvas.height = sel.h;
         ctx.canvas.width  = sel.w;
@@ -391,9 +340,9 @@ function Crop(canvasLiveSelector, options){
     //  redraw function aggregator
     function drawCanvasLive() {
         clearCanvas(ctxLive, canvasLive);
-        // if (!cache.x || !cache.y || !cache.w || !cache.h) {
+        if (!source.x || !source.y || !source.w || !source.h) {
             calculateSourceImagePos(imgSource, ctxLive, canvasLive);
-        // }
+        }
         drawSourceImage(imgSource, ctxLive, canvasLive);
         drawSelection(ctxLive);
     }
@@ -441,7 +390,7 @@ function Crop(canvasLiveSelector, options){
         }
 
         // preserve image absolute coords
-        cache.source = {
+        source = {
             x: x,
             y: y,
             w: w,
@@ -455,9 +404,9 @@ function Crop(canvasLiveSelector, options){
 
         // drawing dark bg
         ctx.beginPath();
-        ctx.drawImage(img, cache.source.x, cache.source.y, cache.source.w, cache.source.h);
+        ctx.drawImage(img, source.x, source.y, source.w, source.h);
         ctx.fillStyle = 'rgba(0, 0, 0, .33)';
-        ctx.fillRect(cache.source.x, cache.source.y, cache.source.w, cache.source.h);
+        ctx.fillRect(source.x, source.y, source.w, source.h);
 
         // drawing cropping area
         ctx.save();
@@ -465,9 +414,8 @@ function Crop(canvasLiveSelector, options){
         ctx.clip();
 
         // drawing bright selection area
-        ctx.drawImage(img, cache.source.x, cache.source.y, cache.source.w, cache.source.h);
+        ctx.drawImage(img, source.x, source.y, source.w, source.h);
         ctx.restore();
-
     }
 
 
@@ -483,23 +431,36 @@ function Crop(canvasLiveSelector, options){
     function drawSelection(ctx, dotted) {
         ctx.beginPath();
 
-        // if (dotted) {
-            // dashed line
-            // ctx.setLineDash(sel.dotted);
-        // } else {
+        // draw squares in the corners
+        ctx.fillStyle = sel.lineColor;
 
-            // solid line
-            // ctx.setLineDash([]);
+        // top-left
+        ctx.fillRect(sel.x - sel.squareSize / 2,
+                     sel.y - sel.squareSize / 2,
+                     sel.squareSize,
+                     sel.squareSize);
 
-            // draw squares in the corners
-            ctx.fillStyle = sel.lineColor;
-            ctx.fillRect(sel.x - sel.squareSize / 2, sel.y - sel.squareSize / 2, sel.squareSize, sel.squareSize);
-            ctx.fillRect(sel.x + sel.w - sel.squareSize / 2, sel.y - sel.squareSize / 2, sel.squareSize, sel.squareSize);
-            ctx.fillRect(sel.x + sel.w - sel.squareSize / 2, sel.y + sel.h - sel.squareSize / 2, sel.squareSize, sel.squareSize);
-            ctx.fillRect(sel.x - sel.squareSize / 2, sel.y + sel.h - sel.squareSize / 2, sel.squareSize, sel.squareSize);
-        // }
+        // top-right
+        ctx.fillRect(sel.x + sel.w - sel.squareSize / 2,
+                     sel.y - sel.squareSize / 2,
+                     sel.squareSize,
+                     sel.squareSize);
 
+        // bottom-right
+        ctx.fillRect(sel.x + sel.w - sel.squareSize / 2,
+                     sel.y + sel.h - sel.squareSize / 2,
+                     sel.squareSize,
+                     sel.squareSize);
+
+        // bottom-left
+        ctx.fillRect(sel.x - sel.squareSize / 2,
+                     sel.y + sel.h - sel.squareSize / 2,
+                     sel.squareSize,
+                     sel.squareSize);
+
+        // selection rectangle
         ctx.rect(sel.x, sel.y, sel.w, sel.h);
+
         ctx.lineWidth = sel.lineWidth;
         ctx.strokeStyle = sel.lineColor;
         ctx.stroke();
