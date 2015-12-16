@@ -20,6 +20,11 @@
         -ms-user-select: none;
         user-select: none;
     }
+
+    #result-img {
+        background-repeat: no-repeat;
+        display: block;
+    }
     </style>
     <script src="crop.js"></script>
 </head>
@@ -36,7 +41,10 @@
     <br>
     <button id="btn-crop">copy</button>
     <br>
-    <img id="img-result" class="noselect">
+    <div id="result-img" src="">
+    </div>
+    <div id="result-txt" style="100%; overflow-wrap: break-word; word-wrap: break-word;"></div>
+
 
     <script>
     var c = Crop('#canvas-live');
@@ -45,7 +53,32 @@
     c.setUrlInput('#inp-src', '#btn-src', 'click');
 
     c.setCropTrigger('#btn-crop', 'click', function(val) {
+
+        var txt = document.querySelectorAll('#result-txt')[0];
+        var img = document.querySelectorAll('#result-img')[0];
+
+        var temp = new Image();
         console.log(val);
+
+        if(typeof val !== 'string') {
+            // obj
+            txt.innerHTML = JSON.stringify(val);
+            temp.onload = function() {
+                img.style.background = 'url(' + val.url + ')';
+                img.style.backgroundSize = temp.width + 'px ' + temp.height + 'px';
+                img.style.backgroundPosition = '"' + -val.x + 'px ' + -val.y + 'px"';
+            }
+            temp.src = val.url;
+
+            img.style.width = val.w + 'px';
+            img.style.height = val.h + 'px';
+
+        } else {
+            // base64
+            // txt.innerHTML = val;
+            img.src = val;
+        }
+
     });
 
     </script>

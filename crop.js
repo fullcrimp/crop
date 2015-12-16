@@ -51,7 +51,7 @@ function Crop(canvasLiveSelector, options){
 
 
     // export values in relative units
-    var temp = {
+    var cache = {
         // memorise to calculate relative
         // values for the selection
         source: {
@@ -64,10 +64,10 @@ function Crop(canvasLiveSelector, options){
         // in case we cannot crop
         // due to CORS or tainted canvas
         sel: {
-            x: 0.25,
-            y: 0.25,
-            w: 0.5,
-            h: 0.5,
+            x: undefined,
+            y: undefined,
+            w: undefined,
+            h: undefined,
         }
     };
 
@@ -84,19 +84,25 @@ function Crop(canvasLiveSelector, options){
         // window events
         window.addEventListener('load', function() {
             resizeCanvasToParentEl(ctxLive, canvasLive);
-            resetSelection(canvasLive);
+            // if(cache.source.x){
+            //     resetSelectionToDefault(canvasLive);
+            // }
         });
 
         window.addEventListener('resize', function() {
             resizeCanvasToParentEl(ctxLive, canvasLive);
             resetSelection(canvasLive);
-            redrawCanvasLive();
+            drawCanvasLive();
         });
 
 
         // draw image if loaded
         imgSource.addEventListener('load', function() {
             clearCanvas(ctxLive, canvasLive);
+            calculateSourceImagePos(imgSource, ctxLive, canvasLive);
+            if(cache.source.x){
+                resetSelectionToDefault(canvasLive);
+            }
             drawSourceImage(imgSource, ctxLive, canvasLive);
             drawSelection(ctxLive);
         });
@@ -110,7 +116,7 @@ function Crop(canvasLiveSelector, options){
         // click
         canvasLive.addEventListener('click', function(e) {
             saveMouseCoordinates(e, canvasLive);
-            redrawCanvasLive();
+            drawCanvasLive();
         });
 
         // pseudo-dragging events
@@ -121,7 +127,7 @@ function Crop(canvasLiveSelector, options){
         canvasLive.addEventListener('mousemove', function(e) {
             if (dragging) {
                 saveMouseCoordinates(e, canvasLive);
-                redrawCanvasLive();
+                drawCanvasLive();
             }
         });
 
@@ -183,9 +189,10 @@ function Crop(canvasLiveSelector, options){
     function setUrlSource(url) {
         var patt = /(https?:\/\/.*\.(?:png|jpg))/i;
 
-        if (patt.test(url)) {
-            imgSource.src = url;
-        }
+        // if (!patt.test(url)) {
+        //     return;
+        // }
+        imgSource.src = url;
     }
 
 
@@ -216,11 +223,11 @@ function Crop(canvasLiveSelector, options){
             } catch(e) {
                 tainted = true;
                 callback({
-                    url: inpSrc.value,
-                    x: temp.sel.x,
-                    y: temp.sel.y,
-                    w: temp.sel.w,
-                    h: temp.sel.h
+                    url: imgSource.src,
+                    x: cache.sel.x,
+                    y: cache.sel.y,
+                    w: cache.sel.w,
+                    h: cache.sel.h
                 });
             }
 
@@ -232,7 +239,7 @@ function Crop(canvasLiveSelector, options){
         imgToCrop.addEventListener('load', function() {
             drawCropImage(imgToCrop, ctxCropped, canvasCropped);
 
-            // temp
+            // cache
             var result = canvasCropped.toDataURL();
             callback(result);
         });
@@ -257,14 +264,29 @@ function Crop(canvasLiveSelector, options){
 
 
     //reset selection to default settings
+    function resetSelectionToDefault(canvas) {
+        var resetVals = {
+            x: cache.source.x + cache.source.w / 4,
+            y: cache.source.y + cache.source.h / 4,
+            w: cache.source.w / 2,
+            h: cache.source.h / 2
+        };
+        log(resetVals);
+        for (prop in resetVals) {
+            sel[prop] = resetVals[prop];
+        }
+    }
+
+
+    //reset selection to default settings
     function resetSelection(canvas) {
         var resetVals = {
-            x: canvas.width / 4,
-            y: canvas.height / 4,
-            w: canvas.width / 2,
-            h: canvas.height / 2
+            x: cache.sel.x,
+            y: cache.sel.y,
+            w: cache.sel.w,
+            h: cache.sel.h
         };
-
+        log(resetVals);
         for (prop in resetVals) {
             sel[prop] = resetVals[prop];
         }
@@ -284,13 +306,22 @@ function Crop(canvasLiveSelector, options){
 
             // central dividing reaction area coord lines
             centerX = sel.x + sel.w / 2,
-            centerY = sel.y + sel.h / 2;
+            centerY = sel.y + sel.h / 2,
+            radius = (sel.w < sel.h) ? sel.w / 2 : sel.h / 2;
 
-        // dragging
-        // if ((x > sel.x + 5) && (x < (sel.x + sel.w - 5)) && (y > sel.y + 5) && (y < (sel.y + sel.h - 5))) {
+        // radius-based calculation of dragging area
+        // if ( Math.abs(x - centerX) < radius && Math.abs(y - centerY) < radius) {
         //     log('drag');
-        //     sel.x = x;
-        //     sel.y = y;
+        //     sel.x = x - shiftX;
+        //     sel.y = y - shiftY;
+        //     return;
+        // }
+
+        // square-based calculation of dragging area
+        // if ((x > sel.x + sel.squareSize) && (x < (sel.x + sel.w - sel.squareSize)) && (y > sel.y + sel.squareSize) && (y < (sel.y + sel.h - sel.squareSize))) {
+        //     log('drag');
+        //     sel.x = x - shiftX;
+        //     sel.y = y - shiftY;
         //     return;
         // }
 
@@ -325,11 +356,11 @@ function Crop(canvasLiveSelector, options){
         // we need to calculate relative TO THE IMAGE, not to canvas
         // because that is what we send to server in the end
         // in case of CORS issues
-        temp.sel = {
-            x: sel.x / canvas.width,
-            y: sel.y / canvas.height,
-            w: sel.w / canvas.width,
-            h: sel.h / canvas.height
+        cache.sel = {
+            x: sel.x - cache.source.x,
+            y: sel.y - cache.source.y,
+            w: sel.w,
+            h: sel.h
         }
     }
 
@@ -358,15 +389,18 @@ function Crop(canvasLiveSelector, options){
 
 
     //  redraw function aggregator
-    function redrawCanvasLive() {
+    function drawCanvasLive() {
         clearCanvas(ctxLive, canvasLive);
+        // if (!cache.x || !cache.y || !cache.w || !cache.h) {
+            calculateSourceImagePos(imgSource, ctxLive, canvasLive);
+        // }
         drawSourceImage(imgSource, ctxLive, canvasLive);
         drawSelection(ctxLive);
     }
 
 
-    // draw loaded image to live canvas
-    function drawSourceImage(img, ctx, canvas) {
+    //
+    function calculateSourceImagePos(img, ctx, canvas) {
         var x, y, w, h;
 
         // @TODO: override to drag the whole selection
@@ -406,11 +440,24 @@ function Crop(canvasLiveSelector, options){
             }
         }
 
+        // preserve image absolute coords
+        cache.source = {
+            x: x,
+            y: y,
+            w: w,
+            h: h
+        }
+    }
+
+
+    // draw loaded image to a canvas
+    function drawSourceImage(img, ctx, canvas) {
+
         // drawing dark bg
         ctx.beginPath();
-        ctx.drawImage(img, x, y, w, h);
-        ctx.fillStyle = 'rgba(0,0,0,.25)';
-        ctx.fillRect(x, y, w, h);
+        ctx.drawImage(img, cache.source.x, cache.source.y, cache.source.w, cache.source.h);
+        ctx.fillStyle = 'rgba(0, 0, 0, .33)';
+        ctx.fillRect(cache.source.x, cache.source.y, cache.source.w, cache.source.h);
 
         // drawing cropping area
         ctx.save();
@@ -418,17 +465,9 @@ function Crop(canvasLiveSelector, options){
         ctx.clip();
 
         // drawing bright selection area
-        ctx.drawImage(img, x, y, w, h);
+        ctx.drawImage(img, cache.source.x, cache.source.y, cache.source.w, cache.source.h);
         ctx.restore();
 
-
-        // preserve image relative coords
-        temp.source = {
-            x: x / canvas.width,
-            y: y / canvas.height,
-            w: w / canvas.width,
-            h: h / canvas.height
-        }
     }
 
 
@@ -444,12 +483,13 @@ function Crop(canvasLiveSelector, options){
     function drawSelection(ctx, dotted) {
         ctx.beginPath();
 
-        if (dotted) {
+        // if (dotted) {
             // dashed line
-            ctx.setLineDash(sel.dotted);
-        } else {
+            // ctx.setLineDash(sel.dotted);
+        // } else {
+
             // solid line
-            ctx.setLineDash([]);
+            // ctx.setLineDash([]);
 
             // draw squares in the corners
             ctx.fillStyle = sel.lineColor;
@@ -457,10 +497,8 @@ function Crop(canvasLiveSelector, options){
             ctx.fillRect(sel.x + sel.w - sel.squareSize / 2, sel.y - sel.squareSize / 2, sel.squareSize, sel.squareSize);
             ctx.fillRect(sel.x + sel.w - sel.squareSize / 2, sel.y + sel.h - sel.squareSize / 2, sel.squareSize, sel.squareSize);
             ctx.fillRect(sel.x - sel.squareSize / 2, sel.y + sel.h - sel.squareSize / 2, sel.squareSize, sel.squareSize);
-        }
+        // }
 
-        // ctx.fillStyle = 'rgba(255,255,255,.15)';
-        // ctx.fillRect(sel.x, sel.y, sel.w, sel.h);
         ctx.rect(sel.x, sel.y, sel.w, sel.h);
         ctx.lineWidth = sel.lineWidth;
         ctx.strokeStyle = sel.lineColor;
@@ -480,6 +518,5 @@ function Crop(canvasLiveSelector, options){
         setBase64: setBase64Source,
         setCropTrigger: setCropTrigger,
 
-        // getCropedImage: getCropedImage
     }
 };
