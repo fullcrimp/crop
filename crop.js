@@ -124,6 +124,28 @@ function Crop(canvasLiveSelector, options){
         canvasLive.addEventListener('mouseleave', function() {
             dragging = false;
         });
+
+
+        // pseudo-dragging mobile events
+        canvasLive.addEventListener('touchstart', function(e) {
+            dragging = true;
+            saveDragShiftValues(e, canvasLive);
+        });
+
+        canvasLive.addEventListener('touchmove', function(e) {
+            if (dragging) {
+                saveMouseCoordinates(e, canvasLive);
+                drawCanvasLive();
+            }
+        });
+
+        canvasLive.addEventListener('touchend', function() {
+            dragging = false;
+        });
+
+        canvasLive.addEventListener('touchcancel', function() {
+            dragging = false;
+        });
     })();
 
 
@@ -299,9 +321,20 @@ function Crop(canvasLiveSelector, options){
          && (x < (sel.x + sel.w - sel.squareSize))
          && (y > sel.y + sel.squareSize)
          && (y < (sel.y + sel.h - sel.squareSize))) {
-            log('drag');
+            //  simple dragging
             sel.x = x - sel.startDragShiftX;
             sel.y = y - sel.startDragShiftY;
+
+            // cehcking borders
+        //     if (sel.x > (source.x + sel.squareSize)
+        //     && ((sel.x + sel.w) < (source.x + source.w - sel.squareSize))) {
+        //         sel.x = x - sel.startDragShiftX;
+        //     }
+        //     if (sel.y > (source.y + sel.squareSize)
+        //    && ((sel.y + sel.h) < (source.y + source.h - sel.squareSize))) {
+        //         sel.y = y - sel.startDragShiftY;
+        //     }
+
             return;
         }
 
