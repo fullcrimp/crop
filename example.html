@@ -48,7 +48,10 @@
     <script>
     var c = Crop('#canvas-live');
 
-    c.setFileInput('#inp-file');
+    c.setFileInput('#inp-file', function(){
+        console.log('file added');
+    });
+
     c.setUrlInput('#inp-src', '#btn-src', 'click');
 
     c.setCropTrigger('#btn-crop', 'click', function(val) {
@@ -62,19 +65,10 @@
         if(typeof val !== 'string') {
             // obj
             txt.innerHTML = JSON.stringify(val);
-            // temp.onload = function() {
-            //     img.style.background = 'url(' + val.url + ')';
-            //     img.style.backgroundSize = temp.width + 'px ' + temp.height + 'px';
-            //     img.style.backgroundPosition = '"' + -val.x + 'px ' + -val.y + 'px"';
-            // }
-            // temp.src = val.url;
-            //
-            // img.style.width = val.w + 'px';
-            // img.style.height = val.h + 'px';
+
 
         } else {
             // base64
-            // txt.innerHTML = val;
             img.src = val;
         }
 

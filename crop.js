@@ -63,7 +63,7 @@ function Crop(canvasLiveSelector, options){
     // core events initalisation
     (function init(){
         /******************************************************************
-        * EVENT LIST @TODO: put in init() fn
+        * EVENT LIST
         ******************************************************************/
 
 
@@ -129,7 +129,7 @@ function Crop(canvasLiveSelector, options){
     * API FUNCTIONS
     ******************************************************************/
     // init file input
-    function setImageSourceFileInput(inpFileSelector) {
+    function setImageSourceFileInput(inpFileSelector, successCallback) {
         inpFile = document.querySelectorAll(inpFileSelector)[0];
 
         //initalise
@@ -142,6 +142,7 @@ function Crop(canvasLiveSelector, options){
 
             if (inpFile.files[0]) {
                 imageSourceFile.readAsDataURL(inpFile.files[0]);
+                successCallback();
             }
         });
     }
@@ -279,7 +280,10 @@ function Crop(canvasLiveSelector, options){
         // }
 
         // square-based calculation of dragging area
-        // if ((x > sel.x + sel.squareSize) && (x < (sel.x + sel.w - sel.squareSize)) && (y > sel.y + sel.squareSize) && (y < (sel.y + sel.h - sel.squareSize))) {
+        // if ((x > sel.x + sel.squareSize)
+        //  && (x < (sel.x + sel.w - sel.squareSize))
+        //  && (y > sel.y + sel.squareSize)
+        //  && (y < (sel.y + sel.h - sel.squareSize))) {
         //     log('drag');
         //     sel.x = x - shiftX;
         //     sel.y = y - shiftY;
@@ -472,6 +476,10 @@ function Crop(canvasLiveSelector, options){
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
+
+    /******************************************************************
+    * FACADE
+    ******************************************************************/
     return {
         setFileInput: setImageSourceFileInput,
         setUrlInput: setImageSourceUrlInput,
