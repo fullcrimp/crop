@@ -29,7 +29,9 @@ Javascript initialisation and API:
 var c = Crop('#canvas-live');
 // canvas selector
 
-c.setFileInput('#inp-file');
+c.setFileInput('#inp-file', function() {
+    console.log('file added');
+});
 // file input selector
 // on change event we load the image to the canvas
 
