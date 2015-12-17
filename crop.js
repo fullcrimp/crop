@@ -47,6 +47,9 @@ function Crop(canvasLiveSelector, options){
         lineColor: '#fff',
         lineWidth: 2,
         squareSize: 12,
+
+        startDragShiftX: undefined,
+        startDragShiftY: undefined,
     };
 
     // source canvas sizes
@@ -104,6 +107,7 @@ function Crop(canvasLiveSelector, options){
         // pseudo-dragging events
         canvasLive.addEventListener('mousedown', function(e) {
             dragging = true;
+            saveDragShiftValues(e, canvasLive);
         });
 
         canvasLive.addEventListener('mousemove', function(e) {
@@ -255,6 +259,17 @@ function Crop(canvasLiveSelector, options){
     }
 
 
+    function saveDragShiftValues(e, canvas) {
+        var x = e.clientX - canvas.getBoundingClientRect().left,
+            y = e.clientY - canvas.getBoundingClientRect().top;
+
+            // shift between click and left top corner of the selection area
+            sel.startDragShiftX = x - sel.x;
+            sel.startDragShiftY = y - sel.y;
+
+            log(sel);
+    }
+
     //
     function saveMouseCoordinates(e, canvas) {
         // click coords relative to the canvas
@@ -274,21 +289,21 @@ function Crop(canvasLiveSelector, options){
         // radius-based calculation of dragging area
         // if ( Math.abs(x - centerX) < radius && Math.abs(y - centerY) < radius) {
         //     log('drag');
-        //     sel.x = x - shiftX;
-        //     sel.y = y - shiftY;
+        //     sel.x = x - sel.startDragShiftX;
+        //     sel.y = y - sel.startDragShiftY;
         //     return;
         // }
 
         // square-based calculation of dragging area
-        // if ((x > sel.x + sel.squareSize)
-        //  && (x < (sel.x + sel.w - sel.squareSize))
-        //  && (y > sel.y + sel.squareSize)
-        //  && (y < (sel.y + sel.h - sel.squareSize))) {
-        //     log('drag');
-        //     sel.x = x - shiftX;
-        //     sel.y = y - shiftY;
-        //     return;
-        // }
+        if ((x > sel.x + sel.squareSize)
+         && (x < (sel.x + sel.w - sel.squareSize))
+         && (y > sel.y + sel.squareSize)
+         && (y < (sel.y + sel.h - sel.squareSize))) {
+            log('drag');
+            sel.x = x - sel.startDragShiftX;
+            sel.y = y - sel.startDragShiftY;
+            return;
+        }
 
         // resizing
         // top-left
