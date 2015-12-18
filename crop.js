@@ -233,12 +233,39 @@ function Crop(canvasLiveSelector, options){
 
                 var deScale = imgSource.width / source.w;
 
-                callback({
-                    url: imgSource.src,
+                var temp = {
                     x: (sel.x - source.x) * deScale,
                     y: (sel.y - source.y) * deScale,
                     w: source.w * deScale,
-                    h: source.h * deScale,
+                    h: source.h * deScale
+                };
+
+                // border cases recalculation
+                if (temp.x < 0 ) {
+                    temp.w = temp.w + temp.x;
+                    temp.x = 0;
+                }
+
+                if (temp.y < 0 ) {
+                    temp.h = temp.h + temp.y;
+                    temp.y = 0;
+                }
+
+                if ((temp.x + temp.w) > imgSource.width) {
+                    temp.w = imgSource.width - temp.x;
+                }
+
+                if ((temp.y + temp.h) > imgSource.height) {
+                    temp.h = imgSource.height - temp.y;
+                }
+
+                // resolve callback fn
+                callback({
+                    url: imgSource.src,
+                    x: temp.x,
+                    y: temp.y,
+                    w: temp.w,
+                    h: temp.h,
                 });
             }
 
@@ -289,7 +316,7 @@ function Crop(canvasLiveSelector, options){
             sel.startDragShiftX = x - sel.x;
             sel.startDragShiftY = y - sel.y;
 
-            log(sel);
+            // log(sel);
     }
 
     //
